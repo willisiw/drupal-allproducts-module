@@ -1,0 +1,80 @@
+<?php
+// $Id$
+/**
+ * @file
+ * Simple module to display a table of Drupal Commerce Products as ?q=allproducts
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function allproducts_menu() {
+  // Module settings.
+  $items['allproducts'] = array(
+    'title' => 'All Products',
+    'description' => 'All Products',
+    'page callback' => 'allproducts_page',
+    'access arguments' => array('access content'),
+  );
+  return $items;
+}
+
+// allproducts_page function
+function allproducts_page() {
+   
+  $query = db_select('commerce_product', 'p');
+  $query
+    ->leftjoin('field_data_field_product', 'fp', 'p.product_id = fp.field_product_product_id');
+  $query
+    ->leftjoin('node', 'n', 'n.nid = fp.entity_id');
+  $query
+    ->fields('n')
+    ->fields('p')
+    ->condition('p.status', '1', '=');
+
+  $result = $query->execute();
+  // Loop through each of our node_example nodes and instruct node_view
+  // to use our custom "example_node_list" view.
+  // http://api.drupal.org/api/function/node_load/7
+  // http://api.drupal.org/api/function/node_view/7
+
+  foreach ($result as $row) {
+    $color = drupal_substr(MD5($row->product_id), 0, 6);
+    //TODO: Add Javascript ONCLICK to the div tag to set SALEID
+    $product = commerce_product_load($row->product_id);
+    $node = node_load($row->nid);
+		
+		$image1 = image_load($product->field_image['und']['0']['uri']);
+		$themeopts = array('path' => $image1->source, 'style_name' => 'thumbnail');
+		$image = theme('image_style', $themeopts);
+		
+    $rows[] = array(
+          '<div style="width:20px;height:20px;float:left;margin-right:10px;background:#' . $color . '"></div>' . $row->product_id,
+          $row->sku,
+          l($row->title, $GLOBALS['base_url'] . '/node/' . $row->nid),
+          $image,
+    );
+    
+  }  
+    $header = array('ID',  'SKU', 'Title', 'Image');
+    // Format output.
+    $output = theme('table', array('header' => $header, 'rows' => $rows)) . theme('pager');
+
+
+   $build['allproducts']['#markup'] = $output;
+
+   
+ 
+   
+  if (user_access('administer content')) {
+    //TODO - DONE: Hide DEVEL for production 
+  // $build['devel1']['#markup'] = '<pre>' . print_r($product, true) . '</pre>';
+  // $build['devel2']['#markup'] = '<pre>' . print_r($node, true) . '</pre>';
+   
+  }
+
+
+  return $build;
+ 
+}

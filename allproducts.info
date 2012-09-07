@@ -1,0 +1,8 @@
+; $Id$
+name = AllProducts
+description = Simple table of Drupal Commerce Products at /?q=allproducts.
+package = Commerce Other
+core = 7.x
+files[] = allproducts.module
+dependencies[] = block
+dependencies[] = commerce
